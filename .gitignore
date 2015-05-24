@@ -1,0 +1,5 @@
+.*.d
+.*.swp
+*.o
+rdmem
+wrmem
