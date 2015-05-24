@@ -1,11 +1,15 @@
 /** \file
- * Read arbitrary physical memory.
+ * Write arbitrary physical memory locations.
  *
- * This is not as dangerous as wrmem, but you should still be careful!
+ * WARNING: This is a dangerous tool.
+ * It can/will crash or corrupt your system if you write
+ * to the wrong locations.
+ *
  */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "DirectHW.h"
 
@@ -37,26 +41,34 @@ main(
 		return EXIT_FAILURE;
 	}
 
-	const uint8_t * const buf = map_physical(addr, map_len);
+	uint8_t * const buf = map_physical(addr, map_len);
 	if (buf == NULL)
 	{
 		perror("mmap");
 		return EXIT_FAILURE;
 	}
 
+	uint8_t * const inbuf = calloc(1, len);
+	if (!inbuf)
+	{
+		perror("malloc");
+		return EXIT_FAILURE;
+	}
 
 	size_t offset = 0;
 	while (offset < len)
 	{
-		ssize_t rc = write(STDOUT_FILENO, buf + page_offset + offset, len - offset);
+		ssize_t rc = read(STDIN_FILENO, inbuf + offset, len - offset);
 		if (rc <= 0)
 		{
-			perror("write");
+			perror("read");
 			return EXIT_FAILURE;
 		}
 
 		offset += rc;
 	}
+
+	memcpy(buf, inbuf, len);
 
 	return EXIT_SUCCESS;
 }

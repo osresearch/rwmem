@@ -1,6 +1,8 @@
-all: rdmem
+all: rdmem wrmem
 
 rdmem: rdmem.o DirectHW.o
+	$(CC) -o $@ $^ -framework IOKit
+wrmem: wrmem.o DirectHW.o
 	$(CC) -o $@ $^ -framework IOKit
 
 clean:
