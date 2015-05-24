@@ -12,3 +12,11 @@ poke anywhere on the system.  It is basically a deliberate backdoor
 in the kernel.  You can download it from Snare's site, if you trust him:
 http://ho.ax/downloads/DirectHW.dmg
 
+Usage
+===
+
+Read your machine's serial number:
+
+    sudo ./rdmem 0xffffff00 256 | xxd -g 1
+
+
