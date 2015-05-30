@@ -24,8 +24,17 @@ http://ho.ax/downloads/DirectHW.dmg
 Usage
 ===
 
+After installing the `DirectHW.dmg` file, load the kernel extension
+as root:
+
+    sudo kextutil /System/Library/Extensions/DirectHW.kext
+
 Read your machine's serial number:
 
     sudo ./rdmem 0xffffff00 256 | xxd -g 1
 
+Read the "BIOS Region" of your boot ROM for analysis (the flash descriptor,
+Intel management engine and gig-e sections show up as all 0xFF):
 
+    sudo ./rdmem 0xff990000 0x670000 > mac-bios.bin
+    
