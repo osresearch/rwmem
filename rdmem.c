@@ -6,9 +6,28 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <unistd.h>
 #include "DirectHW.h"
+
+/*
+ * Copy four bytes at a time, even if it spills over.
+ * This will read from the PCI space safely, unlike mempcy().
+ */
+static void
+quad_memcpy(
+	uint32_t * const out,
+	const uint32_t * const in,
+	size_t len
+)
+{
+	for (size_t i = 0 ; i < len ; i += 4)
+	{
+		out[i/4] = in[i/4];
+	}
+}
+
 
 int
 main(
@@ -38,27 +57,32 @@ main(
 		return EXIT_FAILURE;
 	}
 
-	const uint8_t * const buf = map_physical(map_addr, map_len);
-	if (buf == NULL)
+	const uint8_t * const map_buf = map_physical(map_addr, map_len);
+	if (map_buf == NULL)
 	{
 		perror("mmap");
 		return EXIT_FAILURE;
 	}
 
+	const uint8_t * const buf = map_buf + page_offset;
+
+
+	uint32_t out_buf[0x10000/4];
 
 	size_t offset = 0;
 	while (offset < len)
 	{
-		size_t chunk = 0x10000;
+		size_t chunk = sizeof(out_buf);
 		if (chunk > len - offset)
 			chunk = len - offset;
 
-		const void * const virt_addr = buf + page_offset + offset;
-		const uintptr_t phys_addr = map_addr + page_offset + offset;
+		const void * const virt_addr = buf + offset;
+		const uintptr_t phys_addr = addr + offset;
 
 		fprintf(stderr, "%016"PRIxPTR"\n", phys_addr);
+		quad_memcpy(out_buf, virt_addr, chunk);
 
-		ssize_t rc = write(STDOUT_FILENO, virt_addr, chunk);
+		ssize_t rc = write(STDOUT_FILENO, out_buf, chunk);
 		if (rc <= 0)
 		{
 			perror("write");

@@ -38,3 +38,12 @@ Intel management engine and gig-e sections show up as all 0xFF):
 
     sudo ./rdmem 0xff990000 0x670000 > mac-bios.bin
     
+
+NOTES
+===
+
+* Reading the SMM region will cause the kernel to panic.
+* Reading the PCI BAR regions byte at a time with `memcpy()` or `write()`
+will will generate all 0xFF since the byte-wise access is not defined.
+`rdmem` and `rdpci` will do the right thing with their copy routine.
+
