@@ -32,7 +32,7 @@
 #undef WANT_OLD_API
 
 /* define DEBUG to print Framework debugging information */
-#undef DEBUG
+static const int debug;
 
 #define     err_get_system(err) (((err)>>26)&0x3f)
 #define     err_get_sub(err)    (((err)>>14)&0xfff)
@@ -86,7 +86,7 @@ static int darwin_init(void)
 					IOServiceMatching("DirectHWService"));
 
 	if (!iokit_uc) {
-		printf("DirectHW.kext not loaded.\n");
+		fprintf(stderr, "DirectHW.kext not loaded.\n");
 		errno = ENOSYS;
 		return -1;
 	}
@@ -96,7 +96,7 @@ static int darwin_init(void)
 
 	/* Should not go further if error with service open */
 	if (err != KERN_SUCCESS) {
-		printf("Could not create DirectHW instance.\n");
+		fprintf(stderr, "Could not create DirectHW instance.\n");
 		errno = ENOSYS;
 		return -1;
 	}
@@ -252,9 +252,8 @@ void *map_physical(uint64_t phys_addr, size_t len)
 	in.addr = phys_addr;
 	in.size = len;
 
-#ifdef DEBUG
-	printf("map_phys: phys %08lx, %08x\n", phys_addr, len);
-#endif
+	if (debug)
+		fprintf(stderr, "map_phys: phys %08"PRIx64", %08zx\n", phys_addr, len);
 
 #if !defined(__LP64__) && defined(WANT_OLD_API)
 	/* Check if OSX 10.5 API is available */
@@ -269,14 +268,14 @@ void *map_physical(uint64_t phys_addr, size_t len)
 #endif
 
 	if (err != KERN_SUCCESS) {
-		printf("\nError(kPrepareMap): system 0x%x subsystem 0x%x code 0x%x ",
+		fprintf(stderr, "\nError(kPrepareMap): system 0x%x subsystem 0x%x code 0x%x ",
 				err_get_system(err), err_get_sub(err), err_get_code(err));
 
-		printf("physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
+		fprintf(stderr, "physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
 
 		switch (err_get_code(err)) {
-		case 0x2c2: printf("Invalid argument.\n"); errno = EINVAL; break;
-		case 0x2cd: printf("Device not open.\n"); errno = ENOENT; break;
+		case 0x2c2: fprintf(stderr, "Invalid argument.\n"); errno = EINVAL; break;
+		case 0x2cd: fprintf(stderr, "Device not open.\n"); errno = ENOENT; break;
 		}
 
 		return MAP_FAILED;
@@ -292,22 +291,21 @@ void *map_physical(uint64_t phys_addr, size_t len)
 	usleep(1000);
 
 	if (err != KERN_SUCCESS) {
-		printf("\nError(IOConnectMapMemory): system 0x%x subsystem 0x%x code 0x%x ",
+		fprintf(stderr, "\nError(IOConnectMapMemory): system 0x%x subsystem 0x%x code 0x%x ",
 				err_get_system(err), err_get_sub(err), err_get_code(err));
 
-		printf("physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
+		fprintf(stderr, "physical 0x%08"PRIx64"[0x%zx]\n", phys_addr, len);
 
 		switch (err_get_code(err)) {
-		case 0x2c2: printf("Invalid argument.\n"); errno = EINVAL; break;
-		case 0x2cd: printf("Device not open.\n"); errno = ENOENT; break;
+		case 0x2c2: fprintf(stderr, "Invalid argument.\n"); errno = EINVAL; break;
+		case 0x2cd: fprintf(stderr, "Device not open.\n"); errno = ENOENT; break;
 		}
 
 		return MAP_FAILED;
 	}
 
-#ifdef DEBUG
-	printf("map_phys: virt %08x, %08x\n", addr, size);
-#endif
+	if (debug)
+		fprintf(stderr, "map_phys: virt %08"PRIx64", %08zx\n", addr, (size_t) size);
 
         return (void *)addr;
 }
