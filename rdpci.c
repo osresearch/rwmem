@@ -1,6 +1,7 @@
 /** \file
  * Poke the PCI port with a value and read back the data.
  *
+ * Mapping defined here: http://wiki.osdev.org/PCI_Express#Enhanced_Configuration_Mechanism
  */
 #include <stdio.h>
 #include <stdint.h>
