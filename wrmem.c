@@ -41,7 +41,7 @@ main(
 		return EXIT_FAILURE;
 	}
 
-	uint8_t * const buf = map_physical(addr, map_len);
+	volatile uint8_t * const buf = map_physical(addr, map_len);
 	if (buf == NULL)
 	{
 		perror("mmap");
@@ -68,7 +68,8 @@ main(
 		offset += rc;
 	}
 
-	memcpy(buf, inbuf, len);
+	for (size_t i = 0 ; i < len ; i++)
+		buf[i+page_offset] = inbuf[i];
 
 	return EXIT_SUCCESS;
 }
