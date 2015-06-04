@@ -16,16 +16,16 @@ main(
 	char ** argv
 )
 {
-	if (argc != 5)
+	if (argc != 4)
 	{
-		fprintf(stderr, "Usage: %s bus slot func reg\n", argv[0]);
+		fprintf(stderr, "Usage: %s bus slot func\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
 	const uint32_t bus = strtoul(argv[1], NULL, 0);
 	const uint32_t slot = strtoul(argv[2], NULL, 0);
 	const uint32_t func = strtoul(argv[3], NULL, 0);
-	const uint32_t reg = strtoul(argv[4], NULL, 16);
+	const uint32_t reg = 0; //strtoul(argv[4], NULL, 16);
 
 	const uint32_t addr = 0xe0000000
 		| ((bus  & 0xFF) << 20) // 8 bits
@@ -43,7 +43,7 @@ main(
 	const uintptr_t page_mask = 0xFFF;
 	const uintptr_t page_offset = addr & page_mask;
 	const uintptr_t map_addr = addr & ~page_mask;
-	const size_t map_len = (page_offset + 4 + page_mask) & ~page_mask;
+	const size_t map_len = (page_offset + 256 + page_mask) & ~page_mask;
 
 	const uint8_t * const pcibuf = map_physical(map_addr, map_len);
 	if (pcibuf == NULL)
@@ -52,6 +52,10 @@ main(
 		return EXIT_FAILURE;
 	}
 
-	printf("%08x=%08x\n", addr, *(uint32_t*)(pcibuf + page_offset));
+	for (unsigned i = 0 ; i < 256 ; i+=4)
+	{
+		printf("%08x=%08x\n", addr+i, *(uint32_t*)(pcibuf + page_offset + i));
+	}
+
 	return EXIT_SUCCESS;
 }
