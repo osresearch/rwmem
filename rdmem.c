@@ -12,8 +12,56 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <strings.h>
+#include <ctype.h>
 #include <unistd.h>
 #include "DirectHW.h"
+
+static char
+printable(
+ 	uint8_t c
+)
+{
+	if (isprint(c))
+		return (char) c;
+	return '.';
+}
+
+
+static void
+hexdump(
+	const uintptr_t base_offset,
+	const uint8_t * const buf,
+	const size_t len
+)
+{
+	const size_t width = 16;
+
+	for (size_t offset = 0 ; offset < len ; offset += width)
+	{
+		printf("%08"PRIxPTR":", base_offset + offset);
+		for (size_t i = 0 ; i < width ; i++)
+		{
+			if (i + offset < len)
+				printf(" %02x", buf[offset+i]);
+			else
+				printf("   ");
+		}
+
+		printf("  ");
+
+		for (size_t i = 0 ; i < width ; i++)
+		{
+			if (i + offset < len)
+				printf("%c", printable(buf[offset+i]));
+			else
+				printf(" ");
+		}
+
+		printf("\n");
+	}
+}
+
 
 /*
  * Copy four bytes at a time, even if it spills over.
@@ -39,10 +87,18 @@ main(
 	char ** argv
 )
 {
-	if (argc != 3)
+	int do_ascii = 0;
+
+	if (argc != 3 && argc != 4)
 	{
 		fprintf(stderr, "Usage: %s [-x] phys-address len\n", argv[0]);
 		return EXIT_FAILURE;
+	}
+
+	if (strcmp(argv[1], "-x") == 0)
+	{
+		do_ascii = 1;
+		argv++;
 	}
 
 	const uintptr_t addr = strtoul(argv[1], NULL, 0);
@@ -70,30 +126,38 @@ main(
 
 	const uint8_t * const buf = map_buf + page_offset;
 
-
-	uint32_t out_buf[0x10000/4];
-
-	size_t offset = 0;
-	while (offset < len)
+	// because the PCIe space doesn't like being probed at anything
+	// other than 4-bytes at a time, we force a copy of the region
+	// into a local buffer.
+	void * const out_buf = calloc(1, len);
+	if (!out_buf)
 	{
-		size_t chunk = sizeof(out_buf);
-		if (chunk > len - offset)
-			chunk = len - offset;
+		perror("calloc");
+		return EXIT_FAILURE;
+	}
 
-		const void * const virt_addr = buf + offset;
-		const uintptr_t phys_addr = addr + offset;
+	quad_memcpy(out_buf, (const void*) buf, len);
 
-		fprintf(stderr, "%016"PRIxPTR"\n", phys_addr);
-		quad_memcpy(out_buf, virt_addr, chunk);
-
-		ssize_t rc = write(STDOUT_FILENO, out_buf, chunk);
-		if (rc <= 0)
+	if (do_ascii)
+	{
+		hexdump(addr, out_buf, len);
+	} else {
+		for(size_t offset = 0 ; offset < len ; )
 		{
-			perror("write");
-			return EXIT_FAILURE;
-		}
+			const ssize_t rc = write(
+				STDOUT_FILENO,
+				out_buf + offset,
+				len - offset
+			);
 
-		offset += rc;
+			if (rc <= 0)
+			{
+				perror("write");
+				return EXIT_FAILURE;
+			}
+
+			offset += rc;
+		}
 	}
 
 	return EXIT_SUCCESS;
