@@ -2,6 +2,10 @@
  * Read arbitrary physical memory.
  *
  * This is not as dangerous as wrmem, but you should still be careful!
+ * For instance, attempting to read from SMRAM will cause an immediate
+ * kernel panic.
+ *
+ * (c) 2015 Trammell Hudson
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -37,7 +41,7 @@ main(
 {
 	if (argc != 3)
 	{
-		fprintf(stderr, "Usage: %s phys-address len\n", argv[0]);
+		fprintf(stderr, "Usage: %s [-x] phys-address len\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
