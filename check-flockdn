@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+# Print the BIOS_CNTL and FLOCKDN registers on a Mac.
+# (c) 2015 Trammell Hudson <hudson@trmm.net>
+#
+# Use at your own risk!
+#
+use warnings;
+use strict;
+use FindBin '$Bin';
+
+my $flockdn_base = 0xfed1f800;
+my $bios_base = 0xe00f8000;
+
+my $mem = `$Bin/rdmem $flockdn_base 256`
+	or die "Unable to read FLOCKDN\n";
+my $bios = `$Bin/rdmem $bios_base 256`
+	or die "Unable to read BIOS_CNTL\n";
+
+sub u2
+{
+	my ($data,$offset) = @_;
+	return unpack("S", substr($data,$offset,2));
+}
+
+sub u4
+{
+	my ($data,$offset) = @_;
+	return unpack("L", substr($data,$offset,4));
+}
+
+printf "BIOS_CNTL: %04x (%08x)\n", u2($bios, 0xdc), $bios_base+0xdc;
+printf "FLOCKDN:   %04x (%08x)\n", u2($mem, 0x04), $flockdn_base+0x04;
+printf "PR0:       %08x (%08x)\n", u4($mem, 0x70), $flockdn_base+0x70;
+printf "PR1:       %08x (%08x)\n", u4($mem, 0x74), $flockdn_base+0x74;
+printf "PR2:       %08x (%08x)\n", u4($mem, 0x78), $flockdn_base+0x78;
+printf "PR3:       %08x (%08x)\n", u4($mem, 0x7c), $flockdn_base+0x7c;
+
