@@ -28,10 +28,33 @@ sub u4
 	return unpack("L", substr($data,$offset,4));
 }
 
+sub prr
+{
+	my $reg = shift;
+	my $addr = shift;
+
+	my $w = ($reg >> 31) & 1;
+	my $res1 = ($reg >> 29) & 3;
+	my $limit = ($reg >> 16) & 0x1FFF;
+	my $r = ($reg >> 15) & 1;
+	my $res2 = ($reg >> 13) & 3;
+	my $base = ($reg >> 0) & 0x1FFF;
+
+	return sprintf "%08x (%08x): %s%s %08x-%08x (%x %x)",
+		$reg, $addr,
+		$r ? "!R" : "R",
+		$w ? "!W" : "W",
+		$base << 12,
+		$limit << 12,
+		$res1,
+		$res2,
+		;
+}
+
 printf "BIOS_CNTL: %04x (%08x)\n", u2($bios, 0xdc), $bios_base+0xdc;
 printf "FLOCKDN:   %04x (%08x)\n", u2($mem, 0x04), $flockdn_base+0x04;
-printf "PR0:       %08x (%08x)\n", u4($mem, 0x70), $flockdn_base+0x70;
-printf "PR1:       %08x (%08x)\n", u4($mem, 0x74), $flockdn_base+0x74;
-printf "PR2:       %08x (%08x)\n", u4($mem, 0x78), $flockdn_base+0x78;
-printf "PR3:       %08x (%08x)\n", u4($mem, 0x7c), $flockdn_base+0x7c;
+printf "PR0:       %s\n", prr(u4($mem, 0x70), $flockdn_base+0x70);
+printf "PR1:       %s\n", prr(u4($mem, 0x74), $flockdn_base+0x74);
+printf "PR2:       %s\n", prr(u4($mem, 0x78), $flockdn_base+0x78);
+printf "PR3:       %s\n", prr(u4($mem, 0x7c), $flockdn_base+0x7c);
 
